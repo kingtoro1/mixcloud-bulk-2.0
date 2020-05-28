@@ -1,0 +1,85 @@
+import time
+import random
+import re
+import os
+import pyautogui
+import selenium
+import selenium.webdriver
+
+print('PHASE 0: Opening Chromium')
+
+driver = selenium.webdriver.Chrome()
+
+###change this
+# playlist_url = "https://www.mixcloud.com/deadmau5/"
+playlist_url = "https://www.mixcloud.com/mau5trap/playlists/we-are-friends-radio/"
+
+print('PHASE 1: Accessing', playlist_url)
+driver.get(playlist_url)
+
+SCROLL_PAUSE_TIME = 2
+
+# Get scroll height
+last_height = driver.execute_script("return document.body.scrollHeight")
+
+print('PHASE 2: Scrolling down to the bottom')
+while True:
+    # Scroll down to bottom
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+    # Wait to load page
+    time.sleep(SCROLL_PAUSE_TIME)
+
+    # Calculate new scroll height and compare with last scroll height
+    new_height = driver.execute_script("return document.body.scrollHeight")
+    if new_height == last_height:
+        break
+    last_height = new_height
+
+link_list = driver.find_elements_by_css_selector(".card-title h1 a")
+
+print('PHASE 3: Get all song links')
+
+#transform to downloader links
+new_links = []
+for link in link_list:
+    href = link.get_attribute("href")
+    new_link = href.replace('mixcloud', 'dlmixcloud')
+    new_links.append(new_link)
+
+print('PHASE 4: Download each song')
+
+#download all the links in the link list
+for new_link in new_links:
+    print('Getting', new_link)
+    driver.get(new_link)
+    while True:
+        try:
+            new_link2 = driver.find_element_by_id('download_button')
+            break
+        except selenium.common.exceptions.NoSuchElementException:
+            print('Could not find Download button, waiting 3-5 seconds.')
+            time.sleep(random.randint(3, 5))
+    actionChain = selenium.webdriver.ActionChains(driver)
+    actionChain.context_click(new_link2).perform()
+    pyautogui.typewrite(['down', 'down', 'down', 'down', 'enter'])
+    time.sleep(1)
+    pyautogui.write(re.sub(r'\W+', '', new_link.replace('https://www.dlmixcloud.com', '')))
+    time.sleep(1)
+    pyautogui.typewrite(['enter'])
+    time.sleep(random.randint(3, 5))
+
+while new_links:
+    folder_content = os.listdir('C:\\Users\\Samuel\\Downloads')
+    for link in new_links:
+        for content in folder_content:
+            if re.sub(r'\W+', '', new_link.replace('https://www.dlmixcloud.com', '')) in content:
+                if 'crdownload' not in content:
+                    new_links.remove(link)
+                break
+
+    print('Number of files not finished downloading:', len(new_links))
+    time.sleep(random.randint(3, 5))
+
+
+driver.close()
